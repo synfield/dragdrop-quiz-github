@@ -1,0 +1,477 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test Drag & Drop Quiz</title>
+<link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+<link rel="stylesheet" href="css/idangerous.swiper.css">
+<link rel="stylesheet" href="css/style.css">
+<script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+<script src="js/idangerous.swiper.min.js"></script>
+<script src="http://code.jquery.com/ui/1.8.21/jquery-ui.min.js"></script>
+<script src="js/jquery.ui.touch-punch.min.js"></script>
+<script type="text/javascript" src="js/linkedin-dustjsv2.3.3-2/dist/dust-full.js"></script>
+<script src="js/jquery.injectCSS.js"></script>
+<script src="dragdropJson.js"></script>
+<script type="text/javascript">
+$.fn.extend({
+    hasClasses: function (selectors) {
+        var self = this;
+        for (var i in selectors) {
+            if ($(self).hasClass(selectors[i])) 
+                return true;
+        }
+        return false;
+    }
+});
+
+$(function() {
+	
+	var labelsDropped = {},
+		targElems = 0,
+		gScore = 0,
+		isBtnActivated = {},
+		mySwiper = mySwiper || {},
+		cntid = 'container-0',
+		totquest = quizJSON.questions.length || 0;
+		
+	render();	
+	
+	//template generation
+	function render(){
+		var template = $( "#dragdropview" ).html(); 
+		var compiled = dust.compile( template, "dragdropview");
+	
+		dust.loadSource(compiled);
+	
+		console.log('totquest is : ' + totquest);
+		
+		$.each(quizJSON.questions, function(idx, obj){ 
+			// Set up a base context with a global helper function
+			var base = dust.makeBase({
+			  questHdrCnt: function() { return ++idx +' of '+ totquest}
+			});
+			
+			 dust.render("dragdropview", base.push(quizJSON.questions[idx]), function(err, html_out) {
+			//HTML output
+			 	$(html_out).insertBefore($(".swiper-wrapper .swiper-slide:last-child"));
+			  
+			});
+			//initialise labelsDropped[container-id] && isBtnActivated[container-id]
+			labelsDropped['container-' + (idx)] = 0;
+			isBtnActivated['container-' + (idx)] = false;
+		});
+		//initialise global score gScore
+		gScore = 0;
+	}
+	
+	mySwiper = $('.swiper-container').swiper({
+				//Your options here:
+				pagination: '.pagination',
+    			paginationClickable: true,
+				mode:'horizontal',
+				noSwiping: true,
+				onFirstInit: function(swiper){ mySlide() }
+			  });		  	
+	
+	//swipe left/right action
+	mySwiper.addCallback('SlideNext', function(swiper){
+			mySlide( mySwiper.activeIndex);
+		}) 
+		
+	mySwiper.addCallback('SlidePrev', function(swiper){
+		  	//mySlide();
+			mySlide( mySwiper.activeIndex);
+		})
+	//end
+	
+	//click arrows
+	$('.arrow-left').on('click', function(e){
+		e.preventDefault()
+		mySwiper.swipePrev()
+	 })
+	 
+	$('.arrow-right').on('click', function(e){
+		e.preventDefault()
+		mySwiper.swipeNext()
+	 })
+	//end
+	            
+	function mySlide(idx){
+		
+		idx = (typeof idx == 'undefined' ? 0 : idx);
+		
+		mySwiper.activeIndex = (typeof mySwiper.activeIndex == 'undefined' ? 0 : mySwiper.activeIndex);
+		
+		console.log('mySlide vars idx is : ', idx);
+		console.log('mySlide vars mySwiper.activeIndex is : ', mySwiper.activeIndex);
+		//console.log('mySlide vars quizJSON.questions[idx] is : ', quizJSON.questions[idx]);
+		console.log('labelsDropped array is : ', labelsDropped);
+		console.log('isBtnActivated array is : ', isBtnActivated);
+			 
+		var numQuests = (typeof quizJSON.questions[idx] === 'undefined' ? 0 : totquest);
+		
+		console.log('numQuests is : '+numQuests);
+		
+		if(numQuests > 0){
+			
+			var qid = quizJSON.questions[idx].qid;
+			var lblcontid = "labelCon-" + qid;
+			cntid = "container-" + qid;
+			
+			 //inject dynamic css from json
+			 $.injectCSS(quizJSON.questions[idx].css);
+			
+			//Keep track of how many labels have been dropped, for each d&d question
+			labelsDropped[cntid] = (typeof labelsDropped[cntid] == 'undefined' ? 0 : labelsDropped[cntid]);
+			console.log('mySlide labelsDropped[cntid] is : ', labelsDropped[cntid]);
+			console.log('lblcontid is : ', lblcontid);
+			
+			targElems = $('#'+cntid+' .dropme').length;
+			
+			isBtnActivated[cntid] = (typeof isBtnActivated[cntid] == 'undefined' ? false : isBtnActivated[cntid]);
+			console.log('mySlide isBtnActivated[cntid] is ', isBtnActivated[cntid]);
+			
+			//if isBtnActivated[cntid] is false, i.e. from init or reset, enable no swiping
+			//to freeze slider while dragging
+			if(!isBtnActivated[cntid]){
+				$('.swiper-wrapper').addClass('swiper-no-swiping');
+			}
+			
+			//create targets on .dropme class elements to accept draggable
+			$('#'+cntid+' .dropme').droppable({
+				accept: '#'+lblcontid+' div',
+				hoverClass: 'hovered',
+				drop: handleDrop
+				
+			});
+		
+			//allow .dragme class elements to be draggable
+			$('#'+cntid+' .dragme').draggable({
+					revert: function (event, ui) {
+						//overwrite original position, i.e. hack to return draggable element to its original position
+						$(this).data("draggable").originalPosition = {
+							top: 0,
+							left: 0
+						}
+						//return boolean
+						return !event;
+					},
+					containment: '#'+cntid, //wanna make this unique for each quiz slide see template below
+					stack: '#imgcon-'+qid+' div',
+					start: function( event, ui ) {
+						//stop slider from moving while dragging
+						if(!$('.swiper-wrapper').hasClass('swiper-no-swiping')){
+						 $('.swiper-wrapper').addClass('swiper-no-swiping'); 
+						}
+					},
+					drag: function(event,ui){
+					//check that if were moving draggable off target element
+					//i.e. should have target element data stored in 'droppedin',
+					//then enable target as droppable, delete data 'droppedin',
+					//remove class  dropped (draggable highlight class removed)
+					//decrement labelsDropped and disable 'check answer' button.
+				
+						if($(this).data('droppedin')){
+							//keep placeholder ref for revertDraggable
+							var $thisTargDrop = $(this).data('droppedin');
+							//once this draggable moved off its droppable target, remove its tracking reference from target elem 'data-targstack', which is kept for reversion when one label (draggable) is dragged to a target with an existing label
+							
+							$thisTargDrop.removeData('targstack');
+							//re-enable target (droppable) we just dragged this label off
+							$(this).data('droppedin').droppable('enable');
+							
+							$(this).data('droppedin',null);
+							$(this).removeClass( 'dropped' );
+							labelsDropped[cntid]--;
+							//we've dragged off a target , therefore disable 'check' button 
+							$('#'+cntid+' #chkans').button("disable");
+							//have we checked (btn) for result, if so enable reversion of all 'wrong' draggable items 
+							//back to their origin in 'label container' (#labelCon)
+
+							if($(this).data('result') === 'wrong' && isBtnActivated[cntid]){
+								//reset isBtnActivated[cntid] back to false
+								isBtnActivated[cntid] = false;
+								//we've dragged off target droppable, now remove 'wrong' class from respective target
+								$thisTargDrop.removeClass("wrong");
+								//change cross circle target button for circle button
+								$thisTargDrop.children().removeClass('fa-times-circle-o').addClass('fa-circle-o').css('color', '#a7a7a7');
+								revertDraggable($(this).siblings().not(".ui-state-disabled"));
+							}
+							
+						}
+					},
+					stop: function( event, ui ) {
+						//reactivate slider after dragging stopped
+						 // $('.swiper-wrapper').removeClass('swiper-no-swiping');
+						
+					},
+					cursor: 'move',
+					opacity: 0.35
+			});
+			
+			
+			$('#'+cntid+' #chkans')
+			  .button()
+			  .unbind("click")
+			  .click(function( event ) {
+				  
+					isBtnActivated[cntid] = true;
+					
+					//note selector gets all elements, in conatiner div, with multiple class 'dropme' & 'correct'
+					$('#'+cntid+' .dropme.correct').children().removeClass('fa-circle-o').addClass('fa-check-circle-o').css('color', 'rgb(78, 174, 41)'); //green - correct!
+					
+					$('#'+cntid+' .dropme.wrong').children().removeClass('fa-circle-o').addClass('fa-times-circle-o').css('color', 'rgb(194, 35, 35)'); //red - wrong!
+					
+					//disable all correct droppable and matching draggable elements
+					$('#'+cntid+' .dragme').each(function(){
+						
+						 var $this = $(this);
+						 if($this.data('result') === 'correct'){
+							 //get ref to correct target (droppable) element
+							 var $thisTargDrop = $(this).data('droppedin');
+							 
+							 $this.draggable( 'disable' );
+							 $this.draggable( 'option', 'revert', false );
+							//disable target (droppable)
+							 $thisTargDrop.droppable('disable');
+						 }
+					 });
+					 
+					 //if all draggables have 'correct' data-result then increment global score else decrement score
+					 //console.log("btn click $('#'+cntid+' .dropme.correct').length is : ", $('#'+cntid+' .dropme.correct').length);
+					 if($('#'+cntid+' .dropme.correct').length === targElems){
+						 gScore = (gScore > totquest ?  totquest : ++gScore);
+						 //console.log("btn all correct gScore is : " + gScore);
+						 $('#'+cntid+' #chkans').button("disable");
+						 console.log('chk btn is now clicked, btn now disabled');
+						 //don't allow click event to be triggerred subsequently incrementing the gscore
+						 $('#'+cntid+' #chkans').button().unbind("click")
+						
+					 }
+					 /*else{
+						 gScore = (gScore < 0 ? gScore = 0 : --gScore);
+						 console.log("btn not all correct gScore is : " + gScore);
+					 }*/
+					
+					//reactivate slider
+					if($('.swiper-wrapper').hasClass('swiper-no-swiping')){
+						$('.swiper-wrapper').removeClass('swiper-no-swiping');
+					}
+					/* $('#chkans').button("disable"); */ //or swap out for try again button!
+				 
+				return false;
+			  });
+			  
+			  console.log('mySlide() isBtnActivated[cntid] is : '+ isBtnActivated[cntid]);
+			  console.log('labelsDropped[cntid] !== targElems is : ', labelsDropped[cntid] !== targElems);
+			  if(labelsDropped[cntid] !== targElems && !isBtnActivated[cntid]){
+				   $('#'+cntid+' #chkans').button("disable");
+				   console.log('labels not all dropped, #chkans button is disabled');
+			  }else{
+				  $('#'+cntid+' #chkans').button("enable");
+				  console.log('either all labels dropped or chk btn has been activated. therefore #chkans button is enabled');
+			  }
+			  
+		}else{
+			//Score Summary
+			if(totquest > 0){ 	
+				$('#container h2').html(gScore + ' out of ' + totquest + ' Answers Correct');
+				if(gScore < totquest){
+					$('#container p').html("Go Back to review incorrect answers and try again, or restart and clear all answers!");
+				}else{
+					$('#container p').html("Congratulations! You've successfully completedthis review");
+				}
+				$("#controller").show();
+				//reset (redraw) questions
+				$('#container #replay')
+				  .button()
+				  .unbind("click")
+				  .click(function( event ) {
+					  render();
+					  mySwiper.reInit();
+	
+					  for (var i = totquest-1; i >= 0; i--) {
+						 console.log('i is : ' + i);
+						 mySwiper.removeSlide(i);
+					  }
+					 mySlide();
+					 mySwiper.swipeTo(0, 500);
+					 
+					 return false;
+				  });
+				 
+				//reactivate swipping
+				if($('.swiper-wrapper').hasClass('swiper-no-swiping')){
+						$('.swiper-wrapper').removeClass('swiper-no-swiping');
+				}
+			}
+			
+			
+		}
+	}
+	
+	   //helper func to revert all remaining 'incorrect' draggable items back to original position,
+	//once answers are verified, saves having to drag each 'wrong' draggable element individually
+	function revertDraggable($selector) {
+		
+		$selector.each(function() {
+			var $this = $(this);
+			
+			var $thisTargDrop = $this.data('droppedin');
+			//this is only executed when a 'check answer' has been done and we hve dragged off 
+			//an incorrect label (draggable) therefore reverting all other 'incorrect' labels
+			if ($thisTargDrop.hasClasses(['fa-times-circle-o', 'wrong'])){
+				//note this is the data var 'droppedin' store target object, of the 'other' 
+				//draggables we implicitly reverting. change remaining targets back to 'circle' icon button
+				//$this.data('droppedin').children().removeClass('fa-times-circle-o').addClass('fa-circle-o').css('color', '#a7a7a7'); 
+				$thisTargDrop.children().removeClass('fa-times-circle-o').addClass('fa-circle-o').css('color', '#a7a7a7');
+				//remove data-targstack stored for this target elem
+				$thisTargDrop.removeData('targstack');
+				
+				$thisTargDrop.removeClass("wrong");
+			}
+			
+			$this.data('droppedin', null);
+			//dragging off droppable element therefore remove dropped
+			$this.removeClass( 'dropped' );
+			//replace wrong button circle
+			labelsDropped[cntid]--;
+			//position = $this.data("originalPosition");
+			position = $this.data("draggable").originalPosition;
+			console.log('revertDraggable position ', position);
+			if (position) {
+				$this.animate({
+					left: position.left,
+					top: position.top
+				}, 500, function() {
+					//$this.data("originalPosition", null);
+				});
+			}
+			//delete 'wrong' result data store
+			$this.data("result", null);
+		});
+	 }
+	
+	
+	  function handleDrop( event, ui ) {
+		 
+		  var dropTarget = $(this).data( 'name' );
+		  var dragLabel = ui.draggable.data( 'name' );
+		  labelsDropped[cntid]++;
+		  console.log('handleDrop labelsDropped[cntid] ui ', labelsDropped[cntid]);
+		  console.log('handleDrop targElems ui ', targElems);
+		  //console.log('handledrop ui ', ui);
+		  console.log('label ' + ui.draggable.data('name') + ' was dropped onto target id '+$(this).attr('id')+' with name ' + $(this).data('name'));
+		 
+		   //helper to replace revert current label draggable on target droppable when dragging a new label onto target
+		  $(this).data( 'targstack').push(ui.draggable);
+		  //check if we have more than one draggable stored for this target element
+		  if($(this).data('targstack').length > 1){
+			  //revertDblDraggable($(this).data('targstack').shift());
+			  revertDraggable($(this).data('targstack').shift());
+		  }
+
+		  //code cut from original droppable drop option
+		  ui.draggable.addClass( 'dropped' );
+		  //store target droppable in draggable data store
+		  ui.draggable.data('droppedin',$(this));
+		  
+		  //disable target droppable, prevent other draggables from being dropped on this target
+		 // $(this).droppable('disable');
+
+		  ui.draggable.position( { of: $(this), my: $(this).data('dragpos'), at: $(this).data('targpos') } );
+		 
+		  //if targets have stale 'state' classes set, then remove them
+		  if($(this).hasClass("wrong")) $(this).removeClass("wrong");
+		  if ($(this).hasClass("correct")) $(this).removeClass("correct");
+		  
+		  //add appropriate 'correct; / 'wrong' classes accordingly
+		  if ( dropTarget == dragLabel ) {
+			  console.log('you made the correct selection');
+			  //add class to identify which element shows 'correct' or 'wrong' css highlight
+			  $(this).addClass( 'correct' );
+			  //tag respective draggable as 'correct', for evaluation by 'check' btn
+			  ui.draggable.data('result','correct');
+			  
+		  } else {
+			  console.log('you made the wrong selection');
+			  //ui.draggable.addClass( 'wrong' );
+			  $(this).addClass('wrong');
+			  //tag respective draggable as 'wrong', for evaluation by 'check' btn
+			  ui.draggable.data('result','wrong');
+			  //we wanna be able to enable target droppables for incorrectly
+			  //matched droppable selections to allow subsequent attempts before checking answer
+			  $(this).droppable('enable');
+		  }
+		  //enable button if we have all the labels been dropped on targets
+		  if(labelsDropped[cntid] === targElems){
+			 $('#'+cntid+' #chkans').button("enable");
+			 console.log('handleDrop - all labels placed, chk button enabled'); 
+		  }else{
+			 $('#chkans').button("disable");
+			 console.log('handleDrop - all labels not placed, chk button disabled');
+		  }
+		   
+	}
+	
+});
+
+
+</script>
+</head>
+
+<body>
+<a class="arrow-left" href="#"><i class="fa fa-caret-square-o-left fa-3x"></i></a>
+<a class="arrow-right" href="#"><i class="fa fa-caret-square-o-right fa-3x"></i></a>
+<div class="swiper-container">
+		<div class="swiper-wrapper">
+        	<div class="swiper-slide">
+            	<div id="container">
+                	<div id="content-score">
+                        <h2>Evaluation Summary</h2>
+                        <p>No Questions have been created at this time. Please populate json file</p>
+                     </div>
+                     <div id="controller">
+                        <a id="replay" class="chkansbtn ui-corner-all">Start Again</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+       
+        <div class="pagination"></div>
+</div>
+
+<script id="dragdropview" type="text/x-dust-template">
+
+		<div class="swiper-slide">	
+			<div id="container-{qid}"><!-- we wanna append unique id for each slider container, for containment restraint -->
+                    <div class="qtxt">
+						<h4>Question {questHdrCnt}</h4>
+						<p>{#quest}{quest}{:else}No question details provided{/quest}</p>
+					</div>
+					
+					<div id="subcontainer-{qid}">
+						<div id="imgcon-{qid}">
+							{#droppables}
+							 <div class="{class}" id="{id}" data-name="{data-name}" data-targstack="[]" data-targpos="{data-targpos}" data-dragpos="{data-dragpos}"><i class="fa fa-circle-o fa-3x"></i></div>
+							 {/droppables}
+						</div>
+					   
+						<div id="labelCon-{qid}">
+						{#draggables}
+							 <div class="{class}" data-name="{data-name}"><p>{value}</p></div>
+						{/draggables}
+						</div>
+						
+						<div id="controller">
+							<a id="chkans" class="chkansbtn ui-corner-all">Check Answer</a>
+						</div>
+						
+					</div>
+              </div> 
+		</div>  
+		
+</script>
+</body>
+</html>
