@@ -57,19 +57,19 @@
 				},
 				"droppables": [
 					//NB. Need to Edit "id", "data-name", "data-targpos" & "data-dragpos" values
-					{"class": "dropme", "id": "target-q1-1", "data-name": "nucleole", "data-targpos" : "left center", "data-dragpos" : "right center"}, // droppable target element 1
-					 {"class": "dropme", "id": "target-q1-2", "data-name": "chromatin", "data-targpos" : "center top", "data-dragpos" : "left bottom"},//droppable target element 2
-					 {"class": "dropme", "id": "target-q1-3", "data-name": "membrane", "data-targpos" : "center top", "data-dragpos" : "right bottom"}, // droppable target element 3
-					 {"class": "dropme", "id": "target-q1-4", "data-name": "mucus", "data-targpos" : "right center", "data-dragpos" : "left center"}, // droppable target element 3
-					 {"class": "dropme", "id": "target-q1-5", "data-name": "thyroid", "data-targpos" : "right center", "data-dragpos" : "left center"}, // droppable target element 3
+					{"class": "dropme", "id": "target-q1-1", "data-name": "Oral cavity", "data-targpos" : "left center", "data-dragpos" : "right center"}, // droppable target element 1
+					 {"class": "dropme", "id": "target-q1-2", "data-name": "Appendix", "data-targpos" : "center top", "data-dragpos" : "left bottom"},//droppable target element 2
+					 {"class": "dropme", "id": "target-q1-3", "data-name": "Oesophagus", "data-targpos" : "center top", "data-dragpos" : "right bottom"}, // droppable target element 3
+					 {"class": "dropme", "id": "target-q1-4", "data-name": "Stomach", "data-targpos" : "right center", "data-dragpos" : "left center"}, // droppable target element 3
+					 {"class": "dropme", "id": "target-q1-5", "data-name": "Rectum", "data-targpos" : "right center", "data-dragpos" : "left center"}, // droppable target element 3
 				],
 			   "draggables": [
 			   	//NB. Need to Edit "data-name", "value" values
-					{"class": "dragme", "data-name": "nucleole", "value": "nucleole"}, // draggable label 1
-					{"class": "dragme", "data-name": "chromatin", "value": "chromatin"},// draggable label 2
-					{"class": "dragme", "data-name": "membrane", "value": "membrane"}, // draggable label 3
-					{"class": "dragme", "data-name": "mucus", "value": "mucus"}, // draggable label 3
-					{"class": "dragme", "data-name": "thyroid", "value": "thyroid"} // draggable label 3
+					{"class": "dragme", "data-name": "Appendix", "value": "Appendix"}, // draggable label 1
+					{"class": "dragme", "data-name": "Stomach", "value": "Stomach"},// draggable label 2
+					{"class": "dragme", "data-name": "Oral cavity", "value": "Oral cavity"}, // draggable label 3
+					{"class": "dragme", "data-name": "Rectum", "value": "Rectum"}, // draggable label 3
+					{"class": "dragme", "data-name": "Oesophagus", "value": "Oesophagus"} // draggable label 3
 				],
 			},
 			{ // 1ST QUESTION NB droppables id names must be unique for each question
