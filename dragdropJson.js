@@ -43,12 +43,13 @@
 						left: "283px"
 					},
 					"#target-q1-3": {
-						top: "235px",
-						left: "75px"
-					},
-					"#target-q1-4": {
 						top: "150px",
 						left: "250px"
+					},
+					"#target-q1-4": {
+						top: "235px",
+						left: "75px"
+						
 					},
 					"#target-q1-5": {
 						top: "235px",
@@ -58,9 +59,9 @@
 				"droppables": [
 					//NB. Need to Edit "id", "data-name", "data-targpos" & "data-dragpos" values
 					{"class": "dropme", "id": "target-q1-1", "data-name": "Oral cavity", "data-targpos" : "left center", "data-dragpos" : "right center"}, // droppable target element 1
-					 {"class": "dropme", "id": "target-q1-2", "data-name": "Appendix", "data-targpos" : "center top", "data-dragpos" : "left bottom"},//droppable target element 2
-					 {"class": "dropme", "id": "target-q1-3", "data-name": "Oesophagus", "data-targpos" : "center top", "data-dragpos" : "right bottom"}, // droppable target element 3
-					 {"class": "dropme", "id": "target-q1-4", "data-name": "Stomach", "data-targpos" : "right center", "data-dragpos" : "left center"}, // droppable target element 3
+					 {"class": "dropme", "id": "target-q1-2", "data-name": "Oesophagus", "data-targpos" : "center top", "data-dragpos" : "left bottom"},//droppable target element 2
+					 {"class": "dropme", "id": "target-q1-3", "data-name": "Stomach", "data-targpos" : "right center", "data-dragpos" : "left center"}, // droppable target element 3
+					 {"class": "dropme", "id": "target-q1-4", "data-name": "Appendix", "data-targpos" : "center top", "data-dragpos" : "right bottom"}, // droppable target element 3
 					 {"class": "dropme", "id": "target-q1-5", "data-name": "Rectum", "data-targpos" : "right center", "data-dragpos" : "left center"}, // droppable target element 3
 				],
 			   "draggables": [
